@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hatchoria | Daily Reward</title>
+
+    <link rel="stylesheet" href="daily.css">
+
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="daily.js" defer></script>
+
+</head>
+
+<body>
+
+    <div class="background"></div>
+
+    <div class="reward-container">
+
+        <h1>🎁 Daily Reward</h1>
+
+        <p class="subtitle">
+            今日もHatchoriaへようこそ！
+        </p>
+
+        <div class="reward-card">
+
+            <h2>今日の報酬</h2>
+
+            <div id="rewardText" class="reward-text">
+                読み込み中...
+            </div>
+
+        </div>
+
+        <button id="receiveButton" class="receive-btn">
+
+            受け取る
+
+        </button>
+
+        <p id="message"></p>
+
+    </div>
+
+</body>
+
+</html>

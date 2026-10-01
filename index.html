@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hatchoria - Login</title>
+  <link rel="stylesheet" href="login.css">
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="auth.js" defer></script>
+</head>
+<body>
+  <div class="background"></div>
+
+  <div class="login-container">
+    <div class="logo-area">
+      <img src="../assets/images/egg.png" alt="Egg" class="egg-image">
+      <h1>Hatchoria</h1>
+      <p>英語で育てる、新しい冒険。</p>
+    </div>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="input-group">
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" placeholder="example@email.com" autocomplete="off" required>
+      </div>
+
+      <div class="input-group">
+        <label for="password">パスワード</label>
+        <input type="password" id="password" placeholder="********" autocomplete="off" required>
+      </div>
+
+      <button type="submit" class="login-btn">ログイン</button>
+    </form>
+
+    <button id="registerButton" class="register-btn">新規登録</button>
+    <button id="forgotPassword" class="text-btn">パスワードを忘れた方</button>
+
+    <div id="message"></div>
+  </div>
+
+  <footer>
+    <p>© 2026 Hatchoria</p>
+  </footer>
+</body>
+</html>

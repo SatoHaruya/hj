@@ -1,0 +1,197 @@
+/* ===========================
+   Hatchoria
+   Daily Reward
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Helvetica Neue",sans-serif;
+}
+
+body{
+
+    background:linear-gradient(180deg,#163E8F,#0B1F4D);
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    overflow:hidden;
+
+    color:white;
+
+}
+
+/* 背景 */
+
+.background{
+
+    position:fixed;
+
+    inset:0;
+
+    background:
+
+    radial-gradient(circle at top,#6DA9FF33,transparent 60%),
+
+    radial-gradient(circle at bottom,#00C2FF22,transparent 60%);
+
+    z-index:-1;
+
+}
+
+/* メインカード */
+
+.reward-container{
+
+    width:420px;
+
+    max-width:90%;
+
+    background:rgba(255,255,255,0.12);
+
+    backdrop-filter:blur(12px);
+
+    border-radius:30px;
+
+    padding:35px;
+
+    text-align:center;
+
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+
+}
+
+.reward-container h1{
+
+    font-size:34px;
+
+    margin-bottom:10px;
+
+}
+
+.subtitle{
+
+    opacity:.8;
+
+    margin-bottom:30px;
+
+}
+
+/* 報酬カード */
+
+.reward-card{
+
+    background:rgba(255,255,255,.08);
+
+    border-radius:20px;
+
+    padding:25px;
+
+    margin-bottom:25px;
+
+}
+
+.reward-card h2{
+
+    margin-bottom:18px;
+
+}
+
+.reward-text{
+
+    font-size:28px;
+
+    font-weight:bold;
+
+    line-height:1.8;
+
+}
+
+/* ボタン */
+
+.receive-btn{
+
+    width:100%;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:16px;
+
+    background:#FFD84A;
+
+    color:#222;
+
+    font-size:20px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.receive-btn:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:0 12px 25px rgba(255,216,74,.45);
+
+}
+
+.receive-btn:active{
+
+    transform:scale(.98);
+
+}
+
+/* メッセージ */
+
+#message{
+
+    margin-top:20px;
+
+    min-height:24px;
+
+    font-size:16px;
+
+}
+
+/* スマホ */
+
+@media(max-width:500px){
+
+.reward-container{
+
+    padding:25px;
+
+}
+
+.reward-container h1{
+
+    font-size:28px;
+
+}
+
+.reward-text{
+
+    font-size:24px;
+
+}
+
+.receive-btn{
+
+    font-size:18px;
+
+}
+
+}

@@ -1,0 +1,170 @@
+/* =========================================
+   Hatchoria Login Screen
+========================================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Helvetica Neue",Arial,sans-serif;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(180deg,#0c1635,#193b8d);
+    color:white;
+    overflow:hidden;
+}
+
+.background{
+    position:fixed;
+    inset:0;
+    background:
+        radial-gradient(circle at top,#4d7dff33,transparent 60%),
+        radial-gradient(circle at bottom,#00d4ff22,transparent 55%);
+    z-index:-1;
+}
+
+.login-container{
+    width:430px;
+    max-width:90%;
+    background:rgba(255,255,255,.08);
+    backdrop-filter:blur(12px);
+    border-radius:25px;
+    padding:35px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+    text-align:center;
+}
+
+.logo-area{
+    margin-bottom:25px;
+}
+
+.logo-area h1{
+    font-size:2.3rem;
+    margin-top:15px;
+}
+
+.logo-area p{
+    margin-top:10px;
+    opacity:.8;
+}
+
+.egg-image{
+    width:120px;
+    animation:floatEgg 3s ease-in-out infinite;
+}
+
+@keyframes floatEgg{
+    0%{transform:translateY(0);}
+    50%{transform:translateY(-10px);}
+    100%{transform:translateY(0);}
+}
+
+.input-group{
+    text-align:left;
+    margin-bottom:18px;
+}
+
+.input-group label{
+    display:block;
+    margin-bottom:6px;
+    font-size:.95rem;
+}
+
+.input-group input{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    outline:none;
+    font-size:16px;
+}
+
+.input-group input:focus{
+    box-shadow:0 0 0 3px #5b8cff;
+}
+
+.remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:22px;
+    font-size:.9rem;
+}
+
+.login-btn,
+.register-btn{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:15px;
+    font-size:17px;
+    cursor:pointer;
+    transition:.25s;
+}
+
+.login-btn{
+    background:#ffd84d;
+    color:#222;
+    margin-bottom:12px;
+}
+
+.login-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(255,216,77,.4);
+}
+
+.register-btn{
+    background:#4f80ff;
+    color:white;
+}
+
+.register-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(79,128,255,.4);
+}
+
+.text-btn{
+    margin-top:15px;
+    background:none;
+    border:none;
+    color:#b9d7ff;
+    cursor:pointer;
+}
+
+.text-btn:hover{
+    text-decoration:underline;
+}
+
+#message{
+    margin-top:18px;
+    min-height:22px;
+    font-size:.95rem;
+}
+
+footer{
+    position:fixed;
+    bottom:15px;
+    color:#ffffff88;
+    font-size:13px;
+}
+
+@media (max-width:500px){
+
+    .login-container{
+        padding:25px;
+    }
+
+    .egg-image{
+        width:90px;
+    }
+
+    .logo-area h1{
+        font-size:2rem;
+    }
+
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>メール認証</title>
+
+<link rel="stylesheet"
+href="login.css">
+
+<script type="module"
+src="firebase.js"></script>
+
+<script type="module"
+src="verify.js"
+defer></script>
+
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<div class="login-container">
+
+<h1>📧 メール認証</h1>
+
+<p>
+
+登録ありがとうございます！<br><br>
+
+登録したメールアドレスに<br>
+
+認証メールを送りました。
+
+</p>
+
+<br>
+
+<p>
+
+メールを開いて
+
+<b>「Verify Email」</b>
+
+を押してください。
+
+</p>
+
+<br>
+
+<button id="checkButton"
+class="login-btn">
+
+認証が終わりました
+
+</button>
+
+<br><br>
+
+<div id="message"></div>
+
+</div>
+
+</body>
+
+</html>

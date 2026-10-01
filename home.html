@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>単語育成ゲーム Ultimate アカウント＆設定対応版</title>
+    <style>
+        /* ==========================================================================
+           共通設定 & ベースCSS (スクロール完全防止)
+           ========================================================================== */
+        :root {
+            --correct-color: #ff5252;
+            --wrong-color: #448aff;
+        }
+
+        #app-loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            background: linear-gradient(160deg, #cdeccd, #a8dba8);
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+        #app-loading-overlay.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #app-loading-spinner {
+            width: 54px;
+            height: 54px;
+            border: 6px solid rgba(255,255,255,0.6);
+            border-top-color: #2e7d32;
+            border-radius: 50%;
+            animation: appLoadingSpin 0.9s linear infinite;
+        }
+        #app-loading-text {
+            font-size: 18px;
+            font-weight: 900;
+            color: #2e7d32;
+            letter-spacing: 2px;
+        }
+        #app-loading-retry-btn {
+            margin-top: 6px;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: 900;
+            color: white;
+            background: #2e7d32;
+            border: none;
+            border-radius: 999px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        @keyframes appLoadingSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; 
+            position: fixed;  
+            font-family: sans-serif;
+            background: linear-gradient(to bottom, #dff6ff 0%, #bde0fe 60%, #a5d6a7 100%);
+            transition: 0.6s;
+            overflow-y: hidden;
+            overscroll-behavior: none;
+        }
+
+        body.bonus-active {
+            background: linear-gradient(to bottom, #fff176 0%, #ffd54f 45%, #ff9800 100%) !important;
+        }
+
+        .screen {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        /* ==========================================================================
+           👤 アカウント作成 / 設定メニュー / プロフィール ポップアップ共通 CSS
+           ========================================================================== */
+        .game-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 50000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .game-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .popup-card {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 25px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+            border: 4px solid #42a5f5;
+        }
+        .popup-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #1e88e5;
+            margin-bottom: 15px;
+        }
+        .popup-subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .starter-egg-row {
+            display: flex;
+            justify-content: center;
+            gap: 26px;
+            margin-top: 6px;
+        }
+        .starter-egg-choice {
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 18px;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .starter-egg-choice:hover {
+            background: #f5f5f5;
+            transform: scale(1.05);
+        }
+        .starter-egg-choice img {
+            width: 90px;
+            height: auto;
+        }
+        .starter-egg-label {
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* アカウント作成用追加 */
+        #account-name-input {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 999px;
+            outline: none;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .primary-btn {
+            background: linear-gradient(135deg, #42a5f5, #1e88e5);
+            color: white;
+            border: none;
+            padding: 14px 50px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(30,136,229,0.3);
+        }
+        .secondary-btn {
+            background: #eceff1;
+            color: #37474f;
+            border: none;
+            padding: 12px 40px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 999px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        /* ⚙️ 設定メニュー内ボタン群 */
+        .menu-list-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+        .menu-list-btn:hover {
+            background: #e3f2fd;
+            border-color: #90caf9;
+        }
+
+        /* 📋 プロフィール画面用追加 */
+        .profile-info-box {
+            background: #f8f9fa;
+            border: 2px solid #cfd8dc;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .profile-label {
+            font-size: 12px;
+            color: #78909c;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .profile-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #263238;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+        .profile-popup-card {
+            max-height: 82vh;
+            overflow-y: auto;
+        }
+
+        .storage-popup-card {
+            max-height: 82vh;
+            overflow: hidden;
+        }
+        #storage-float-area {
+            position: relative;
+            width: 100%;
+            height: 45vh;
+            min-height: 260px;
+            overflow: hidden;
+        }
+        .storage-item-bubble {
+            position: absolute;
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #fffdf7, #efe0c8);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            cursor: pointer;
+            animation: storageFloat 3.5s ease-in-out infinite;
+        }
+        @keyframes storageFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-16px) rotate(4deg); }
+        }
+        #storage-detail-overlay {
+            z-index: 60500;
+        }
+        #equipment-detail-overlay {
+            z-index: 60500;
+        }
+        .profile-edit-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .profile-edit-row .profile-value {
+            margin-bottom: 0;
+        }
+        .edit-btn {
+            flex-shrink: 0;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 999px;
+            background: #eceff1;
+            color: #455a64;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .profile-edit-box {
+            display: none;
+            background: white;
+            border: 2px solid #e91e63;
+            border-radius: 12px;
+            padding: 12px;
+            margin: -4px 0 16px 0;
+        }
+        .profile-edit-box.show {
+            display: block;
+        }
+        .profile-edit-box input,
+        .profile-edit-box select,
+        .profile-edit-box textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+        }
+        .profile-edit-box textarea {
+            resize: none;
+            height: 70px;
+        }
+        .profile-note {
+            font-size: 12px;
+            color: #e53935;
+            font-weight: bold;
+            margin-top: 6px;
+            min-height: 14px;
+        }
+        .profile-edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .primary-btn-small, .secondary-btn-small {
+            flex: 1;
+            padding: 9px 0;
+            border: none;
+            border-radius: 999px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .primary-btn-small {
+            background: #e91e63;
+            color: white;
+        }
+        .secondary-btn-small {
+            background: #eceff1;
+            color: #455a64;
+        }
+        .profile-intro-text {
+            font-size: 14px;
+            font-weight: normal;
+            white-space: pre-wrap;
+        }
+
+        .code-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid #b0bec5;
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+        .code-text {
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #e91e63;
+            letter-spacing: 1px;
+        }
+        .copy-btn {
+            background: #42a5f5;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .copy-btn.copied {
+            background: #4caf50;
+        }
+        .friend-item-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #ffffff;
+            border: 1px solid #b0bec5;
+            border-radius: 12px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+        }
+        .friend-item-card img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+        }
+        .friend-item-info {
+            flex: 1;
+            text-align: left;
+        }
+        .friend-item-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #263238;
+        }
+        .friend-item-level {
+            font-size: 11px;
+            color: #78909c;
+        }
+        .friend-approve-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            background: #66bb6a;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .friend-empty-text {
+            font-size: 12px;
+            color: #999;
+        }
+        .equip-unequip-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            background: #b0bec5;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .friend-list-area {
+            max-height: 26vh;
+            overflow-y: auto;
+            margin-bottom: 8px;
+        }
+        .match-invite-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            background: #ff7043;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+        .match-decline-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            background: #b0bec5;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        #match-invite-popup, #match-declined-popup {
+            position: fixed;
+            inset: 0;
+            z-index: 60000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        #match-invite-popup.show, #match-declined-popup.show {
+            display: flex;
+        }
+        .match-popup-box {
+            background: white;
+            border-radius: 22px;
+            padding: 28px 26px;
+            width: 82%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .match-popup-name {
+            font-size: 20px;
+            font-weight: 900;
+            color: #333;
+        }
+        .match-popup-sub {
+            font-size: 13px;
+            color: #888;
+            margin-top: 6px;
+        }
+        .match-popup-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 22px;
+        }
+        .match-popup-decline-btn, .match-popup-accept-btn {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 999px;
+            font-weight: 900;
+            font-size: 15px;
+            color: white;
+        }
+        .match-popup-decline-btn {
+            background: #e53935;
+        }
+        .match-popup-accept-btn {
+            background: #43a047;
+        }
+
+        #match-game-screen {
+            display: none;
+            background: linear-gradient(160deg, #fff3e0, #ffe0b2);
+        }
+        .match-opponent-status {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 500;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #d84315;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            display: none;
+        }
+        .match-opponent-status.show {
+            display: block;
+        }
+        #match-select-phase {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 84%;
+            max-width: 380px;
+            background: white;
+            border-radius: 24px;
+            padding: 30px 24px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        #match-select-phase.show {
+            display: block;
+        }
+        #match-cancel-btn {
+            display: none;
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            z-index: 20;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 999px;
+            background: #757575;
+            color: white;
+            font-weight: 900;
+            font-size: 14px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+            cursor: pointer;
+        }
+        #match-cancel-btn.show {
+            display: block;
+        }
+        .match-select-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #d84315;
+            margin-bottom: 20px;
+        }
+        .match-select-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .match-select-btn {
+            flex: 1;
+            padding: 16px 0;
+            border: none;
+            border-radius: 16px;
+            background: #ffe0b2;
+            color: #d84315;
+            font-weight: 900;
+            font-size: 16px;
+        }
+        .match-select-btn.selected {
+            background: #d84315;
+            color: white;
+        }
+        #match-select-message {
+            margin-top: 18px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            min-height: 18px;
+        }
+        .match-game-header, .match-game-stage {
+            display: none;
+        }
+        .match-game-header.show, .match-game-stage.show {
+            display: flex;
+        }
+        .match-game-stage.show {
+            display: block;
+        }
+        .match-game-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .match-game-side {
+            width: 40%;
+            text-align: center;
+        }
+        .match-game-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .match-game-score {
+            font-size: 26px;
+            font-weight: 900;
+            color: #d84315;
+        }
+        .match-game-counter {
+            font-size: 16px;
+            font-weight: 900;
+            color: #333;
+            background: white;
+            padding: 6px 16px;
+            border-radius: 999px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        .match-game-stage {
+            margin-top: 60px;
+            text-align: center;
+            padding: 0 24px;
+        }
+        #match-q-display {
+            font-size: 32px;
+            font-weight: 900;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        #match-ans-input {
+            width: 80%;
+            max-width: 320px;
+            padding: 14px 18px;
+            border: 2px solid #ddd;
+            border-radius: 999px;
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+        }
+        #match-check-btn {
+            display: block;
+            margin: 20px auto 0;
+        }
+        #match-waiting-message {
+            display: none;
+            margin-top: 24px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #d84315;
+        }
+        #match-waiting-message.show {
+            display: block;
+        }
+        #match-countdown-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 61000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.6);
+        }
+        #match-countdown-overlay.show {
+            display: flex;
+        }
+        #match-countdown-number {
+            font-size: 120px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 30px rgba(255,255,255,0.6);
+        }
+        #match-result-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 61000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.55);
+        }
+        #match-result-overlay.show {
+            display: flex;
+        }
+        #match-disconnect-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 62000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.62);
+        }
+        #match-disconnect-overlay.show {
+            display: flex;
+        }
+        #match-disconnect-message {
+            width: 82%;
+            max-width: 380px;
+            padding: 30px 24px;
+            border-radius: 24px;
+            background: white;
+            color: #d84315;
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1.6;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        #match-result-box {
+            width: 82%;
+            max-width: 380px;
+            background: white;
+            border-radius: 24px;
+            padding: 30px 24px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        #match-result-title {
+            font-size: 34px;
+            font-weight: 900;
+            color: #d84315;
+        }
+        #match-result-scores {
+            margin-top: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #555;
+            line-height: 1.8;
+        }
+        #match-result-home-btn {
+            margin-top: 22px;
+            padding: 14px 46px;
+            border: none;
+            border-radius: 999px;
+            background: #d84315;
+            color: white;
+            font-weight: 900;
+            font-size: 16px;
+        }
+
+        /* ==========================================================================
+           1. HOME SCREEN (ホーム画面)
+           ========================================================================== */
+        #home-screen {
+            display: block;
+        }
+
+        #level-panel {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: white;
+            padding: 12px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,.15);
+            z-index: 10;
+        }
+        #home-username-display {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e88e5;
+            margin-bottom: 4px;
+        }
+        #xp-bar {
+            width: 200px;
+            height: 12px;
+            background: #ddd;
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 6px 0 4px 0;
+        }
+        #xp-fill-home {
+            width: 0%; 
+            height: 100%;
+            background: linear-gradient(90deg, #42a5f5, #7c4dff);
+            border-radius: 999px;
+            transition: 0.35s;
+        }
+        #home-status-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        #home-xp-text { color: #333; }
+        #home-coin-text { color: #ff9800; font-size: 14px; }
+
+        #setting-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,.15);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #egg-area {
+            position: absolute;
+            left: 25%;
+            top: 50%; 
+            transform: translate(-50%, -50%); 
+            z-index: 5;
+            width: 250px;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #egg-area img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.7)) drop-shadow(0 0 30px rgba(0,0,0,0.25));
+        }
+
+        .float-char-anim {
+            animation: floatEgg 4s ease-in-out infinite;
+        }
+
+        @keyframes floatEgg {
+            0% { transform: translate(-50%, -50%) translateY(0px); }
+            50% { transform: translate(-50%, -50%) translateY(-15px); }
+            100% { transform: translate(-50%, -50%) translateY(0px); }
+        }
+
+        #right-menu-container {
+            position: absolute;
+            left: 75%;
+            top: 42%; 
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #diamond-menu {
+            position: relative;
+            width: 360px;
+            height: 420px; 
+        }
+        .diamond {
+            position: absolute;
+            width: 150px;
+            height: 220px;
+            background: white;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,.25);
+            transition: .3s;
+            cursor: pointer;
+        }
+        .diamond:hover:not(.locked) { transform: scale(1.05); }
+        .diamond::before {
+            content: "";
+            position: absolute;
+            top: 10px; left: 20px; right: 20px;
+            height: 45%;
+            background: linear-gradient(rgba(255,255,255,.9), rgba(255,255,255,0));
+            clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+        }
+        .diamond-content {
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            line-height: 1.5;
+            color: #222;
+            z-index: 2;
+        }
+
+        .diamond:nth-child(1) { left: 105px; top: 0; }        
+        .diamond.left { left: 15px; top: 115px; }             
+        .diamond.right { left: 195px; top: 115px; }           
+        .diamond.adventure { left: 105px; top: 230px; }       
+
+        .locked {
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 45%, #bdbdbd 100%) !important;
+            cursor: not-allowed !important;
+        }
+        .lock-line {
+            margin-top: 12px;
+            font-size: 24px;
+        }
+
+        .home-footer-menu {
+            margin-top: 55px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; 
+        }
+
+        .circle-menu-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #ffb74d;
+            font-size: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+            transition: transform 0.2s, background-color 0.2s;
+            position: relative;
+        }
+        .circle-menu-btn:hover {
+            transform: scale(1.1);
+            background-color: #fffde7;
+        }
+        .circle-menu-btn::after {
+            content: attr(data-label);
+            position: absolute;
+            bottom: -22px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+            white-space: nowrap;
+            text-shadow: 1px 1px 0px white;
+        }
+        
+        .circle-menu-btn.dummy-btn {
+            border-color: #b0bec5;
+            background: #eceff1;
+            font-size: 22px;
+            color: #78909c;
+        }
+
+        /* ==========================================================================
+           📦 4. GACHA SCREEN (ガチャ専用画面)
+           ========================================================================== */
+        #gacha-screen {
+            display: none;
+            background: linear-gradient(to bottom, #f3e5f5, #e1bee7, #ce93d8);
+            text-align: center;
+        }
+        
+        .nav-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 12px 25px;
+            background: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,.2);
+            z-index: 100;
+        }
+        
+        .gacha-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            background: white;
+            padding: 30px 20px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 4px solid #ba68c8;
+        }
+        .friend-profile-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            max-height: 82vh;
+            overflow-y: auto;
+            background: white;
+            padding: 30px 20px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 4px solid #29b6f6;
+            text-align: center;
+        }
+        #friend-profile-screen { display: none; }
+        #match-screen { display: none; }
+        .gacha-screen-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #7b1fa2;
+            margin-bottom: 10px;
+        }
+        .gacha-coin-status {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff9800;
+            margin-bottom: 25px;
+        }
+        #gacha-main-box {
+            min-height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 80px;
+            background: #fdf6ff;
+            border-radius: 20px;
+            border: 3px dashed #ba68c8;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        .gacha-draw-action-btn {
+            background: linear-gradient(135deg, #ab47bc, #7b1fa2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(123,31,162,0.4);
+            transition: 0.2s;
+        }
+
+        #gacha-choice-container {
+            display: none; 
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 5px;
+            margin-top: 10px;
+        }
+        .gacha-choice-btn {
+            width: 48%;
+            padding: 14px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            color: white;
+        }
+        #gacha-convert-btn {
+            background: linear-gradient(135deg, #ff7043, #f4511e); 
+        }
+        #gacha-keep-btn {
+            background: linear-gradient(135deg, #26a69a, #00897b); 
+        }
+        .gacha-choice-btn:hover {
+            transform: scale(1.03);
+        }
+
+        .nyanko-black-box {
+            background-color: rgba(0, 0, 0, 0.85); 
+            border: 2px solid #555;                 
+            border-radius: 8px;                    
+            padding: 8px 16px;                     
+            display: inline-block;                 
+            margin: 8px auto;                      
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+        }
+
+        .rarity-tag {
+            font-size: 13px;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .item-ultra {
+            color: #ffffff !important;
+            font-weight: 900;
+            text-shadow: 0 0 10px #ffffff, 0 0 20px #e0e0e0, 0 0 30px #ffffff;
+            animation: spookyGlow 2s infinite alternate;
+        }
+        .tag-ultra { background: #616161; color: #ffffff; box-shadow: 0 0 8px #ffffff; }
+        @keyframes spookyGlow {
+            0% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.6)); opacity: 0.85; }
+            100% { filter: drop-shadow(0 0 15px rgba(255,255,255,1)); opacity: 1; }
+        }
+
+        .item-legendary {
+            color: #ffd700 !important;
+            font-weight: 900;
+            text-shadow: 0 0 8px #fff59d, 0 0 20px #ffd700, 0 0 30px #ffb300;
+            filter: drop-shadow(0 0 8px rgba(255,215,0,0.8));
+        }
+        .tag-legendary { background: #ffd700; color: #212121; box-shadow: 0 0 8px #ffd700; }
+
+        .item-rare {
+            color: #29b6f6 !important;
+            font-weight: 900;
+            text-shadow: 0 0 6px #b3e5fc, 0 0 15px #0288d1;
+            filter: drop-shadow(0 0 5px rgba(3,169,244,0.6));
+        }
+        .tag-rare { background: #0288d1; color: #ffffff; }
+
+        .item-common {
+            color: #eeeeee !important;
+            font-weight: bold;
+        }
+        .tag-common { background: #9e9e9e; color: #ffffff; }
+
+        .gacha-result-msg {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+            line-height: 1.5;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* ==========================================================================
+           🎁 ログインボーナス用ポップアップ
+           ========================================================================== */
+        #login-bonus-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 20000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        #login-bonus-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .bonus-card {
+            background: white;
+            width: 90%;
+            max-width: 420px;
+            border-radius: 30px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            transform: translateY(-40px) scale(0.7); 
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid #fff176;
+        }
+        #login-bonus-overlay.show .bonus-card { transform: translateY(-40px) scale(1); } 
+        .bonus-title { font-size: 26px; font-weight: 900; color: #ff9800; margin-bottom: 5px; }
+        .bonus-subtitle { font-size: 14px; color: #666; margin-bottom: 20px; }
+        .bonus-days-counter { font-size: 28px; font-weight: 800; color: #d32f2f; margin-bottom: 5px; }
+        .bonus-gift-box { font-size: 70px; margin-bottom: 15px; animation: giftWobble 2s ease infinite; display: inline-block; }
+        @keyframes giftWobble { 0%, 100% { transform: rotate(0deg) scale(1); } 5%, 15% { transform: rotate(-8deg) scale(1.05); } 10%, 20% { transform: rotate(8deg) scale(1.05); } 25% { transform: rotate(0deg) scale(1); } }
+        .bonus-reward-text { font-size: 22px; font-weight: bold; color: #333; margin-bottom: 25px; background: #fff9c4; padding: 10px 20px; border-radius: 999px; display: inline-block; }
+        .bonus-close-btn { background: linear-gradient(135deg, #ffb74d, #ff9800); color: white; border: none; padding: 14px 45px; font-size: 18px; font-weight: bold; border-radius: 999px; cursor: pointer; }
+
+        /* ==========================================================================
+           2. SELECTION SCREEN (選択画面)
+           ========================================================================== */
+        #story-adventure-screen {
+            display: none;
+            background: linear-gradient(to bottom, #dff6ff, #bde0fe);
+        }
+        #home-btn { 
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 120px; 
+            height: 55px;
+            background: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,.2);
+        }
+        #back-btn { left: 20px; }
+
+        .choice-diamond {
+            position: absolute;
+            width: 180px;
+            height: 260px;
+            background: white;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,.25);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .choice-diamond:hover:not(.locked) { transform: translateY(-50%) scale(1.05); }
+        .story-choice { left: 18%; top: 50%; transform: translateY(-50%); }
+        .adventure-choice { right: 18%; top: 50%; transform: translateY(-50%); background: #fffde7; }
+
+        /* ==========================================================================
+           3. GAME SCREEN (タイピング画面)
+           ========================================================================== */
+        #game-screen {
+            display: none;
+        }
+        #life-container {
+            position: fixed;
+            top: 20px;
+            left: 160px; 
+            font-size: 32px;
+            letter-spacing: 5px;
+            z-index: 3000;
+            background: rgba(255,255,255,0.85);
+            padding: 5px 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .shake-anim { animation: shake 0.5s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+        
+        .game-header {
+            position: fixed;
+            top: 20px;
+            left: 55%;
+            transform: translateX(-50%);
+            background: white;
+            border-radius: 30px;
+            padding: 12px 35px;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            gap: 4px;
+            z-index: 3000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        .game-header-top { display: flex; align-items: center; gap: 20px; }
+        #game-lv-num { font-size: 24px; font-weight: 900; color: #7c4dff; }
+        .game-xp-bar-container { width: 230px; height: 18px; background: #eee; border-radius: 999px; overflow: hidden; position: relative; }
+        #game-xp-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #42a5f5, #7c4dff); transition: 0.35s; }
+        
+        /* 🛠️ 【バグ修正】XPテキストとコイン表示が絶対に重ならないようにフレックスボックス化 */
+        .game-header-bottom { 
+            display: flex; 
+            justify-content: space-between; /* 左右の両端にきれいに分散させる */
+            align-items: center; 
+            width: 100%; 
+            min-width: 230px; 
+            font-weight: bold; 
+            font-size: 14px; 
+            color: #444; 
+            padding: 0 5px; 
+            margin-top: 6px;
+            position: relative;
+        }
+
+        #game-xp-popup-area {
+            position: absolute;
+            right: 5px;
+            top: 0px;
+            white-space: nowrap; 
+            display: inline-block;
+            z-index: 3100;
+        }
+
+        .xp-gain-popup {
+            font-weight: 900;
+            font-size: 15px;
+            color: #1e88e5;
+            animation: popupFadeUp 1.8s ease forwards;
+            text-shadow: 1px 1px 0px white;
+        }
+        .xp-gain-popup.special-bonus {
+            color: #ff9800;
+            animation: popupFadeUp 1.8s ease forwards;
+            text-shadow: 1px 1px 0px white;
+        }
+
+        @keyframes popupFadeUp {
+            0% { transform: translateY(5px); opacity: 0; }
+            15% { transform: translateY(0px); opacity: 1; }
+            80% { transform: translateY(0px); opacity: 1; }
+            100% { transform: translateY(-12px); opacity: 0; }
+        }
+        
+        #combo-display { position: fixed; top: 130px; right: 45px; font-size: 38px; font-weight: 900; color: #ff5722; z-index: 6000; text-shadow: 0 0 8px white; }
+        #question-counter {
+            position: fixed;
+            top: 20px;
+            right: 45px;
+            font-size: 26px;
+            font-weight: 900;
+            color: #333;
+            z-index: 6000;
+            background: rgba(255,255,255,0.85);
+            padding: 6px 20px;
+            border-radius: 999px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .main-stage { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .game-float-char-anim { animation: gameFloatEgg 4s ease-in-out infinite; }
+        @keyframes gameFloatEgg { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+        #char-display { position: relative; display: inline-block; }
+        #char-display img { width: 200px; height: auto; object-fit: contain; filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); display: block; }
+        #evolution-flash {
+            position: absolute;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            border-radius: 20px;
+            pointer-events: none;
+        }
+        .evo-shockwave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            margin: -25px 0 0 -25px;
+            background: radial-gradient(circle, white 0%, rgba(255,255,255,0.6) 55%, rgba(255,255,255,0) 75%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .evo-particle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            margin: -6px 0 0 -6px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 3px rgba(255,255,255,0.9);
+            pointer-events: none;
+        }
+        #q-display { margin-top: 15px; font-size: 42px; font-weight: 900; background: rgba(255,255,255,0.92); padding: 15px 45px; border-radius: 30px; display: inline-block; box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
+        .ui-bottom { position: fixed; bottom: 30px; width: 100%; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; z-index: 3100; }
+        #ans-input { width: 320px; padding: 20px; border: none; outline: none; border-radius: 999px; font-size: 24px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+        .btn { border: none; padding: 18px 40px; border-radius: 999px; font-size: 22px; font-weight: 900; color: white; cursor: pointer; }
+        #check-btn { background: #66bb6a; }
+        #next-btn { background: #42a5f5; display: none; }
+        
+        #heart-break-overlay { 
+            position: fixed; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%) scale(0); 
+            font-size: 30vh; 
+            z-index: 8500; 
+            pointer-events: none; 
+            display: none; 
+            text-shadow: 0px 4px 15px rgba(0,0,0,0.3);
+        }
+        .animate-heart-timeline { 
+            display: block !important; 
+            animation: heartTimelineSequence 1.5s ease-in-out forwards; 
+        }
+        
+        @keyframes heartTimelineSequence { 
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 
+            15% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+            48% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+            52% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+            85% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 
+        }
+        
+        #judge-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; z-index: 7000; display: none; }
+        #judge-overlay.show { animation: judgeFade 1s ease-out forwards; }
+        #judge-mark { font-size: 35vh; font-weight: 900; }
+        @keyframes judgeFade { 0% { opacity: 0; transform: translate(-50%,-50%) scale(0); } 25% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(0.7); } }
+        
+        #priority-message { 
+            position: fixed; 
+            top: 52%; left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 5.5vw; 
+            font-weight: 900; 
+            text-align: center; 
+            white-space: nowrap; 
+            z-index: 10000; 
+            opacity: 0; 
+            pointer-events: none; 
+            text-shadow: 2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 0px 4px 10px rgba(0,0,0,0.5);
+        }
+        #priority-message.show { opacity: 1; transform: translate(-50%, -50%) scale(1); transition: transform 0.2s ease, opacity 0.2s ease; }
+
+        .priority-blink {
+            animation: pinkRedBlink 0.1s infinite alternate !important;
+        }
+
+        @keyframes pinkRedBlink {
+            0% { color: #ff69b4 !important; } 
+            100% { color: #ff0000 !important; } 
+        }
+        
+        #levelup-overlay { position: fixed; inset: 0; overflow: hidden; pointer-events: none; display: none; z-index: 5000; }
+        #levelup-overlay::before { content: ""; position: absolute; width: 100%; height: 200%; left: 0; bottom: -100%; background: linear-gradient(to top, rgba(33,150,243,0.4), rgba(103,58,183,0.3), rgba(255,255,255,0)); animation: levelGlow 2s ease-out forwards; }
+
+        #gameover-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: black;
+            opacity: 0;
+            transition: opacity 2s ease-in;
+        }
+        #gameover-overlay.show {
+            opacity: 1;
+        }
+        #gameover-text {
+            color: white;
+            font-size: 56px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            opacity: 0;
+            transition: opacity 0.6s ease-in;
+        }
+        #gameover-overlay.show-text #gameover-text {
+            opacity: 1;
+        }
+        #gameover-home-btn {
+            margin-top: 30px;
+            padding: 16px 60px;
+            font-size: 22px;
+            font-weight: 900;
+            color: #333;
+            background: white;
+            border: none;
+            border-radius: 999px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease-in;
+        }
+        #gameover-overlay.show-text #gameover-home-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #answer-reveal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 8500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.45);
+        }
+        #answer-reveal-overlay.show {
+            display: flex;
+        }
+        #answer-reveal-box {
+            min-width: 220px;
+            background: white;
+            border-radius: 20px;
+            padding: 22px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        #answer-reveal-gauge-track {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        #answer-reveal-gauge-fill {
+            height: 100%;
+            width: 100%;
+            background: #ff7043;
+            border-radius: 999px;
+        }
+        #answer-reveal-text {
+            font-size: 22px;
+            font-weight: 900;
+            color: #333;
+        }
+
+        #clear-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.55);
+            opacity: 0;
+            transition: opacity 0.6s ease-out;
+        }
+        #clear-overlay.show {
+            opacity: 1;
+        }
+        #clear-frame {
+            width: 82%;
+            max-width: 480px;
+            padding: 30px 20px;
+            border: 6px double #ffd54f;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #fffdf5, #fff3d0);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            text-align: center;
+            transform: scale(0.85);
+            transition: transform 0.5s ease-out;
+        }
+        #clear-overlay.show #clear-frame {
+            transform: scale(1);
+        }
+        #clear-title {
+            font-size: 46px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: #ff9800;
+            text-shadow: 0 3px 0 rgba(0,0,0,0.1);
+        }
+        #clear-stats {
+            margin-top: 14px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #555;
+            line-height: 1.8;
+        }
+        #clear-home-btn {
+            margin-top: 26px;
+            padding: 16px 60px;
+            font-size: 22px;
+            font-weight: 900;
+            color: #333;
+            background: white;
+            border: none;
+            border-radius: 999px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease-in;
+        }
+        #clear-overlay.show #clear-home-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #combo-continue-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.35);
+        }
+        #combo-continue-overlay.show {
+            display: flex;
+        }
+        #combo-continue-box {
+            width: 82%;
+            max-width: 460px;
+            padding: 30px 24px;
+            background: #1a1a1a;
+            border-radius: 22px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #combo-continue-text {
+            color: white;
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1.5;
+        }
+        #combo-continue-buttons {
+            margin-top: 22px;
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+        }
+        #combo-continue-yes, #combo-continue-no {
+            padding: 12px 36px;
+            font-size: 18px;
+            font-weight: 900;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+        #combo-continue-yes {
+            background: #ffd54f;
+            color: #333;
+        }
+        #combo-continue-no {
+            background: #555;
+            color: white;
+        }
+        @keyframes levelGlow { 0% { transform: translateY(100%); opacity: 0; } 100% { transform: translateY(-20%); opacity: 1; } }
+        .sparkle { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: white; box-shadow: 0 0 10px white; animation: sparkleMove 2s linear forwards; }
+        @keyframes sparkleMove { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-120vh) scale(1.5); opacity: 0; } }
+        
+        #bonus-start-logo { 
+            position: fixed; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%) scale(0) rotate(0deg); 
+            font-size: 10vw; 
+            font-weight: 900; 
+            color: #fff176; 
+            z-index: 9500; 
+            pointer-events: none; 
+            white-space: nowrap; 
+            text-shadow: 0 0 20px rgba(255,152,0,0.8), 0 0 40px rgba(255,235,59,0.5);
+            display: none;
+        }
+        .bonus-anime-active {
+            display: block !important;
+            animation: bonusPerfectSequence 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        @keyframes bonusPerfectSequence {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(1) rotate(720deg); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1) rotate(720deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.2) rotate(750deg); opacity: 0; }
+        }
+
+        #firework-layer { position: fixed; inset: 0; pointer-events: none; z-index: 4500; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+    <div id="app-loading-overlay">
+        <div id="app-loading-spinner"></div>
+        <div id="app-loading-text">読み込み中...</div>
+        <button id="app-loading-retry-btn" style="display:none;">再読み込み</button>
+    </div>
+
+    <div id="firework-layer"></div>
+    <div id="levelup-overlay"></div>
+    <div id="bonus-start-logo">ボーナス</div>
+    <div id="priority-message"></div>
+    <div id="judge-overlay"><div id="judge-mark"></div></div>
+    <div id="heart-break-overlay">❤️</div>
+
+    <div id="match-invite-popup">
+        <div class="match-popup-box">
+            <div id="match-invite-popup-name" class="match-popup-name">プレイヤー</div>
+            <div class="match-popup-sub">対戦を申し込んでいます</div>
+            <div class="match-popup-buttons">
+                <button id="match-invite-decline-btn" class="match-popup-decline-btn">拒否</button>
+                <button id="match-invite-accept-btn" class="match-popup-accept-btn">許可</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="match-declined-popup">
+        <div class="match-popup-box">
+            <div id="match-declined-popup-message" class="match-popup-name">相手に拒否されました</div>
+            <div class="match-popup-buttons">
+                <button id="match-declined-ok-btn" class="match-popup-accept-btn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="account-creation-overlay" class="game-overlay">
+        <div class="popup-card">
+            <div class="popup-title">🎮 アカウント作成</div>
+            <div class="popup-subtitle">ゲームで使用するあなたのアカウント名を入力してください。<br>※名前決定時に専用のユーザーコードが発行されます。</div>
+            <input type="text" id="account-name-input" placeholder="アカウント名（12文字以内）" maxlength="12">
+            <button id="account-submit-btn" class="primary-btn">決定してゲーム開始</button>
+        </div>
+    </div>
+
+    <div id="starter-select-overlay" class="game-overlay">
+        <div class="popup-card" style="text-align: center;">
+            <div class="popup-title" style="font-size: 24px;">HatchOriaへようこそ！</div>
+            <div class="popup-subtitle" style="font-size: 13px; margin-top: -6px;">卵を選択してください</div>
+            <div class="starter-egg-row">
+                <div class="starter-egg-choice" data-type="leaf">
+                    <img src="assets/images/leaf_1.png" alt="草属性の卵">
+                    <div class="starter-egg-label">🌿 草属性</div>
+                </div>
+                <div class="starter-egg-choice" data-type="fire">
+                    <img src="assets/images/fire_1.png" alt="火属性の卵">
+                    <div class="starter-egg-label">🔥 火属性</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="setting-menu-overlay" class="game-overlay">
+        <div class="popup-card" style="border-color: #b0bec5;">
+            <div class="popup-title" style="color: #37474f;">⚙️ 設定メニュー</div>
+            <div style="margin-top: 20px;">
+                <button id="menu-profile-btn" class="menu-list-btn">👤 プロフィール確認</button>
+                <button id="menu-friends-btn" class="menu-list-btn">🤝 フレンド</button>
+                <button id="menu-reset-btn" class="menu-list-btn" style="color:#d32f2f;">🚨 セーブデータのリセット</button>
+            </div>
+            <button id="setting-menu-close-btn" class="secondary-btn">閉じる</button>
+        </div>
+    </div>
+
+    <div id="profile-overlay" class="game-overlay">
+        <div class="popup-card profile-popup-card" style="border-color: #e91e63;">
+            <div class="popup-title" style="color: #e91e63;">👤 プロフィール</div>
+            
+            <div class="profile-info-box">
+
+                <div class="profile-label">プレイヤーランク</div>
+                <div id="profile-rank-display" class="profile-value">Lv.1</div>
+
+                <div class="profile-label">アカウント名</div>
+                <div class="profile-edit-row">
+                    <div id="profile-name-display" class="profile-value">---</div>
+                    <button id="profile-name-edit-btn" class="edit-btn">編集</button>
+                </div>
+                <div id="profile-name-edit-box" class="profile-edit-box">
+                    <input id="profile-name-input" type="text" maxlength="12" placeholder="新しいアカウント名">
+                    <div id="profile-name-cost-note" class="profile-note"></div>
+                    <div class="profile-edit-actions">
+                        <button id="profile-name-save-btn" class="primary-btn-small">保存</button>
+                        <button id="profile-name-cancel-btn" class="secondary-btn-small">キャンセル</button>
+                    </div>
+                </div>
+
+                <div class="profile-label">称号</div>
+                <div class="profile-edit-row">
+                    <div id="profile-title-display" class="profile-value">なし</div>
+                    <button id="profile-title-edit-btn" class="edit-btn">変更</button>
+                </div>
+                <div id="profile-title-edit-box" class="profile-edit-box">
+                    <select id="profile-title-select"></select>
+                    <div class="profile-edit-actions">
+                        <button id="profile-title-save-btn" class="primary-btn-small">保存</button>
+                        <button id="profile-title-cancel-btn" class="secondary-btn-small">キャンセル</button>
+                    </div>
+                </div>
+
+                <div class="profile-label">自己紹介</div>
+                <div class="profile-edit-row">
+                    <div id="profile-intro-display" class="profile-value profile-intro-text">未設定</div>
+                    <button id="profile-intro-edit-btn" class="edit-btn">編集</button>
+                </div>
+                <div id="profile-intro-edit-box" class="profile-edit-box">
+                    <textarea id="profile-intro-input" maxlength="100" placeholder="自己紹介を入力(100文字まで)"></textarea>
+                    <div class="profile-edit-actions">
+                        <button id="profile-intro-save-btn" class="primary-btn-small">保存</button>
+                        <button id="profile-intro-cancel-btn" class="secondary-btn-small">キャンセル</button>
+                    </div>
+                </div>
+
+                <div class="profile-label">ユーザーコード（フレンド用）</div>
+                <div class="code-row">
+                    <span id="profile-code-display" class="code-text">----------</span>
+                    <button id="profile-copy-btn" class="copy-btn">コピー</button>
+                </div>
+            </div>
+
+            <button id="profile-close-btn" class="secondary-btn">戻る</button>
+        </div>
+    </div>
+
+    <div id="friend-profile-screen" class="screen">
+        <button id="friend-profile-back-btn" class="nav-btn">ホームへ</button>
+        <div class="friend-profile-container">
+            <div class="popup-title" style="color: #0288d1;">👤 プロフィール</div>
+
+            <div class="profile-info-box">
+                <div class="profile-label">プレイヤーランク</div>
+                <div id="friend-profile-rank" class="profile-value">Lv.1</div>
+
+                <div class="profile-label">アカウント名</div>
+                <div id="friend-profile-name" class="profile-value">---</div>
+
+                <div class="profile-label">称号</div>
+                <div id="friend-profile-title" class="profile-value">なし</div>
+
+                <div class="profile-label">自己紹介</div>
+                <div id="friend-profile-intro" class="profile-value profile-intro-text">未設定</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="match-screen" class="screen">
+        <button id="match-back-btn" class="nav-btn">ホームへ</button>
+        <div class="friend-profile-container">
+            <div class="popup-title" style="color: #d84315;">⚔️ マッチ</div>
+
+            <div class="profile-label">届いている対戦の誘い</div>
+            <div id="match-invites-list" class="friend-list-area"></div>
+
+            <div class="profile-label" style="margin-top: 18px;">フレンドに対戦を申し込む</div>
+            <div id="match-friends-list" class="friend-list-area"></div>
+        </div>
+    </div>
+
+    <div id="match-game-screen" class="screen">
+
+        <div id="match-opponent-status" class="match-opponent-status"></div>
+
+        <button id="match-cancel-btn" type="button">キャンセル</button>
+
+        <div id="match-select-phase">
+            <div class="match-select-title">問題数を選ぼう</div>
+            <div class="match-select-buttons">
+                <button class="match-select-btn" data-count="5">5問</button>
+                <button class="match-select-btn" data-count="10">10問</button>
+                <button class="match-select-btn" data-count="30">30問</button>
+            </div>
+            <div id="match-select-message"></div>
+        </div>
+
+        <div class="match-game-header">
+            <div class="match-game-side">
+                <div class="match-game-label">あなた</div>
+                <div id="match-my-score" class="match-game-score">0問</div>
+            </div>
+            <div id="match-question-counter" class="match-game-counter">1/10</div>
+            <div class="match-game-side">
+                <div id="match-opponent-name" class="match-game-label">相手</div>
+                <div id="match-opponent-score" class="match-game-score">0問</div>
+            </div>
+        </div>
+
+        <div class="match-game-stage">
+            <div id="match-q-display">準備中...</div>
+            <input id="match-ans-input" type="text" placeholder="答えを入力...">
+            <button id="match-check-btn" class="btn">決定！</button>
+            <div id="match-waiting-message">あなたの解答終了！相手を待っています…</div>
+        </div>
+
+        <div id="match-countdown-overlay">
+            <div id="match-countdown-number">3</div>
+        </div>
+
+        <div id="match-result-overlay">
+            <div id="match-result-box">
+                <div id="match-result-title">CLEAR</div>
+                <div id="match-result-scores">
+                    <div id="match-result-my-score">あなた：0秒</div>
+                    <div id="match-result-opponent-score">相手：0秒</div>
+                </div>
+                <button id="match-result-home-btn">ホームへ</button>
+            </div>
+        </div>
+
+        <div id="match-disconnect-overlay">
+            <div id="match-disconnect-message">相手との接続が切れました</div>
+        </div>
+
+    </div>
+
+    <div id="friends-overlay" class="game-overlay">
+        <div class="popup-card" style="border-color: #29b6f6; max-height: 82vh; overflow-y: auto;">
+            <div class="popup-title" style="color: #0288d1;">🤝 フレンド</div>
+
+            <div class="profile-info-box">
+                <div class="profile-label">自分のフレンドコード</div>
+                <div class="code-row">
+                    <span id="friends-own-code" class="code-text">----------</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 18px; text-align: left;">
+                <div class="profile-label">フレンドコードを入力して申請</div>
+                <div class="code-row">
+                    <input id="friends-add-input" type="text" placeholder="フレンドコードを入力" style="flex:1; padding:10px; border-radius:10px; border:1px solid #ccc;">
+                    <button id="friends-add-btn" class="copy-btn">申請</button>
+                </div>
+                <div id="friends-add-message" style="font-size:13px; margin-top:6px; min-height:18px;"></div>
+            </div>
+
+            <div id="friends-requests-section" style="margin-top: 20px; text-align: left; display:none;">
+                <div class="profile-label">届いている申請</div>
+                <div id="friends-requests-list"></div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: left;">
+                <div class="profile-label">フレンド一覧</div>
+                <div id="friends-list"></div>
+            </div>
+
+            <button id="friends-close-btn" class="secondary-btn">戻る</button>
+        </div>
+    </div>
+
+    <div id="login-bonus-overlay">
+        <div class="bonus-card">
+            <div class="bonus-title">🎉 デイリーボーナス！</div>
+            <div class="bonus-subtitle">今日もゲームを開いてくれてありがとう！</div>
+            <div id="bonus-days-display" class="bonus-days-counter">1日目</div>
+            <div class="bonus-gift-box">🎁</div>
+            <br>
+            <div class="bonus-reward-text">🪙 +150 コイン 獲得！</div>
+            <br>
+            <button id="bonus-claim-btn" class="bonus-close-btn">受け取る</button>
+        </div>
+    </div>
+
+    <div id="home-screen" class="screen">
+        <div id="level-panel">
+            <div id="home-username-display">プレイヤー: ---</div>
+            <div id="home-lv-num">Lv.1</div>
+            <div id="xp-bar">
+                <div id="xp-fill-home"></div>
+            </div>
+            <div id="home-status-bottom">
+                <div id="home-xp-text">0 / 50 XP</div>
+                <div id="home-coin-text">🪙 0</div>
+            </div>
+        </div>
+
+        <button id="setting-btn">⚙️</button>
+
+        <div id="egg-area" class="float-char-anim"></div>
+
+        <div id="right-menu-container">
+            <div id="diamond-menu">
+                <div class="diamond locked">
+                    <div class="diamond-content">ランキング<div class="lock-line">⛓️🔒⛓️</div></div>
+                </div>
+                <div class="diamond left" id="home-friend-diamond">
+                    <div class="diamond-content">フレンド</div>
+                </div>
+                <div class="diamond right" id="home-match-diamond">
+                    <div class="diamond-content">マッチ</div>
+                </div>
+                <div class="diamond adventure">
+                    <div class="diamond-content">ストーリー<br>＆<br>育成</div>
+                </div>
+            </div>
+
+            <div class="home-footer-menu">
+                <button id="home-gacha-btn" class="circle-menu-btn" data-label="ガチャ">📦</button>
+                <button id="home-equipment-btn" class="circle-menu-btn" data-label="装備">⚔️</button>
+                <button id="home-storage-btn" class="circle-menu-btn" data-label="貯蔵庫">🗄️</button>
+                <button class="circle-menu-btn dummy-btn" data-label="準備中">🔒</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="story-adventure-screen" class="screen">
+        <button id="home-btn">ホームへ</button>
+        <div class="choice-diamond story-choice locked">
+            <div class="diamond-content">ストーリー<div class="lock-line">⛓️🔒⛓️</div></div>
+        </div>
+        <div class="choice-diamond adventure-choice">
+            <div class="diamond-content">冒険</div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <button id="back-btn" class="nav-btn">ホームへ</button>
+        <div id="life-container">❤️❤️❤️</div>
+        <div id="question-counter">10/10</div>
+        <div id="combo-display">🔥×0 COMBO!</div>
+        <div class="game-header">
+            <div class="game-header-top">
+                <div id="game-lv-num">Lv.1</div>
+                <div class="game-xp-bar-container"><div id="game-xp-fill"></div></div>
+            </div>
+            <div class="game-header-bottom">
+                <div id="game-xp-text">0/50</div>
+                <div id="game-coin-text-play" style="color: #ff9800;">🪙 0</div>
+                <div id="game-xp-popup-area"></div>
+            </div>
+        </div>
+        <div class="main-stage">
+            <div id="char-display" class="game-float-char-anim"></div>
+            <div id="q-display">準備中...</div>
+        </div>
+        <div class="ui-bottom">
+            <input id="ans-input" type="text" placeholder="答えを入力...">
+            <div>
+                <button id="check-btn" class="btn">決定！</button>
+                <button id="next-btn" class="btn">次へ進む ＞</button>
+            </div>
+        </div>
+        <div id="gameover-overlay">
+            <div id="gameover-text">GAME OVER</div>
+            <button id="gameover-home-btn">ホームに戻る</button>
+        </div>
+        <div id="answer-reveal-overlay">
+            <div id="answer-reveal-box">
+                <div id="answer-reveal-gauge-track">
+                    <div id="answer-reveal-gauge-fill"></div>
+                </div>
+                <div id="answer-reveal-text"></div>
+            </div>
+        </div>
+        <div id="clear-overlay">
+            <div id="clear-frame">
+                <div id="clear-title">CLEAR</div>
+                <div id="clear-stats">
+                    <div id="clear-correct">正解数：0/10</div>
+                    <div id="clear-xp">獲得XP：0xp</div>
+                    <div id="clear-coins">獲得コイン：0コイン</div>
+                </div>
+            </div>
+            <button id="clear-home-btn">ホームに戻る</button>
+        </div>
+        <div id="combo-continue-overlay">
+            <div id="combo-continue-box">
+                <div id="combo-continue-text">COMBOを継続させますか？</div>
+                <div id="combo-continue-buttons">
+                    <button id="combo-continue-yes">はい</button>
+                    <button id="combo-continue-no">いいえ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="gacha-screen" class="screen">
+        <button id="gacha-back-btn" class="nav-btn">ホームへ</button>
+        <div class="gacha-container">
+            <div class="gacha-screen-title">✨ 宝箱ガチャ ✨</div>
+            <div id="gacha-screen-coin-text" class="gacha-coin-status">所持コイン: 🪙 0</div>
+            <div id="gacha-main-box">📦</div>
+            
+            <button id="gacha-draw-action-btn" class="gacha-draw-action-btn">1回引く (🪙500)</button>
+
+            <div id="gacha-choice-container">
+                <button id="gacha-hold-btn" class="gacha-choice-btn">保留</button>
+                <button id="gacha-keep-btn" class="gacha-choice-btn">入手</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="equipment-overlay" class="game-overlay">
+        <div class="popup-card" style="border-color: #8e24aa; max-height: 82vh; overflow-y: auto;">
+            <div class="popup-title" style="color: #8e24aa;">⚔️ 装備</div>
+
+            <div class="profile-label">現在の装備</div>
+            <div id="equipment-current" class="friend-item-card">
+                <div class="friend-item-info">
+                    <div class="friend-item-name">なし</div>
+                    <div class="friend-item-level">効果なし</div>
+                </div>
+            </div>
+
+            <div class="profile-label" style="margin-top: 18px;">所持アイテム</div>
+            <div id="equipment-inventory-list" class="friend-list-area"></div>
+
+            <button id="equipment-close-btn" class="secondary-btn" style="margin-top: 18px;">戻る</button>
+        </div>
+    </div>
+
+    <div id="equipment-detail-overlay" class="game-overlay">
+        <div class="popup-card" style="border-color: #8e24aa;">
+            <div id="equipment-detail-name" class="popup-title" style="color: #333; text-align: center; font-size: 18px;"></div>
+            <div id="equipment-detail-effect" class="friend-item-level" style="text-align: center; margin-top: 6px;"></div>
+            <div id="equipment-detail-levelup-note" class="profile-note" style="text-align: center;"></div>
+
+            <div class="profile-edit-actions" style="margin-top: 18px;">
+                <button id="equipment-detail-levelup-btn" class="primary-btn-small">レベルアップ</button>
+                <button id="equipment-detail-equip-btn" class="primary-btn-small">装備する</button>
+            </div>
+
+            <button id="equipment-detail-close-btn" class="secondary-btn" style="margin-top: 14px;">閉じる</button>
+        </div>
+    </div>
+
+    <div id="storage-overlay" class="game-overlay">
+        <div class="popup-card storage-popup-card" style="border-color: #6d4c41;">
+            <div class="popup-title" style="color: #6d4c41;">🗄️ 貯蔵庫</div>
+
+            <div id="storage-float-area"></div>
+
+            <button id="storage-close-btn" class="secondary-btn" style="margin-top: 18px;">戻る</button>
+        </div>
+    </div>
+
+    <div id="storage-detail-overlay" class="game-overlay">
+        <div class="popup-card" style="border-color: #6d4c41;">
+            <div id="storage-detail-icon" style="font-size: 64px; text-align: center;">📦</div>
+            <div id="storage-detail-name" class="popup-title" style="color: #333; text-align: center; font-size: 18px;"></div>
+
+            <div class="profile-edit-actions" style="margin-top: 18px;">
+                <button id="storage-detail-convert-btn" class="primary-btn-small">コインに変換</button>
+                <button id="storage-detail-obtain-btn" class="primary-btn-small">入手</button>
+            </div>
+
+            <button id="storage-detail-close-btn" class="secondary-btn" style="margin-top: 14px;">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           JSメインロジック
+           ========================================================================== */
+        // 画面切り替えは screenNav.js が担当。
+        // ここでは「その画面に入った」イベントを受けて
+        // 必要な後処理(表示更新など)だけを行う。
+        window.addEventListener("hatchoria:enterHome", () => {
+            updateDisplay();
+        });
+
+        // プロフィール・設定・アカウント作成は profile.js に分離済み
+
+        // レベルに応じた進化段階(game.jsのgetMonsterStage()と同じ基準)
+        function getMonsterImage(player) {
+            let stage = 1;
+            const level = player.level;
+            if (level >= 80) stage = 5;
+            else if (level >= 50) stage = 4;
+            else if (level >= 30) stage = 3;
+            else if (level >= 10) stage = 2;
+
+            const monster = player.monster || "leaf";
+            return `assets/images/${monster}_${stage}.png`;
+        }
+
+        // 単語出題・クイズ判定は game.js が担当するため、
+        // ここには quizData は置かない
+
+        let loginStreak = 1; 
+
+        // レベル・XP・コインは game.js が読み込む Firestore のプレイヤー
+        // データ(window.HatchoriaPlayer)を直接参照する。
+        // ここではローカルの lv/xp/goal/coins は持たない。
+        // ガチャ機能(rewards・inventory等)は gacha.js に分離済み。
+        // アカウント名・フレンドコード・設定メニューは profile.js に分離済み。
+
+        function saveGameData() {
+            const dataToSave = {
+                loginStreak: loginStreak,
+                lastLoginDate: localStorage.getItem("egg_game_last_login") 
+            };
+            localStorage.setItem("egg_game_save", JSON.stringify(dataToSave));
+        }
+
+        function loadGameData() {
+            const savedData = localStorage.getItem("egg_game_save");
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed.loginStreak !== undefined) loginStreak = parsed.loginStreak;
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        function checkLoginBonus() {
+            if (!window.HatchoriaPlayer || !window.HatchoriaPlayer.friendCode) return;
+
+            const todayStr = new Date().toLocaleDateString(); 
+            const lastLoginStr = localStorage.getItem("egg_game_last_login");
+
+            if (!lastLoginStr || lastLoginStr !== todayStr) {
+                if (lastLoginStr) {
+                    const todayTime = new Date(todayStr).getTime();
+                    const lastLoginTime = new Date(lastLoginStr).getTime();
+                    const diffDays = Math.floor((todayTime - lastLoginTime) / (1000 * 60 * 60 * 24));
+                    if (diffDays === 1) loginStreak++;
+                    else if (diffDays > 1) loginStreak = 1;
+                } else { loginStreak = 1; }
+
+                document.getElementById("bonus-days-display").innerText = `${loginStreak}日目`;
+
+                setTimeout(() => {
+                    document.getElementById("login-bonus-overlay").classList.add("show");
+                    playFireworks(); 
+                }, 600);
+
+                document.getElementById("bonus-claim-btn").onclick = () => {
+                    if (window.HatchoriaPlayer) {
+                        window.HatchoriaPlayer.coins += 150;
+                        window.HatchoriaSave.save();
+                    }
+                    localStorage.setItem("egg_game_last_login", todayStr); 
+                    document.getElementById("login-bonus-overlay").classList.remove("show");
+                    saveGameData(); updateDisplay();
+                };
+            }
+        }
+
+        // ガチャ機能(抽選・変換・所持)は gacha.js に分離済み
+
+        // ホーム画面・ガチャ画面の表示更新のみを行う。
+        // レベル・XP・コインは game.js が読み込んだ Firestore の
+        // プレイヤーデータ(window.HatchoriaPlayer)をそのまま参照する。
+        // ゲーム画面(ライフ・コンボ等)の表示は game.js が管理する。
+        // ガチャ画面のコイン表示は gacha.js が管理する。
+        function updateDisplay(){
+            const p = window.HatchoriaPlayer;
+
+            document.getElementById("home-username-display").innerText =
+                "プレイヤー: " + (p && p.accountName ? p.accountName : "---");
+
+            if (!p) return; // プレイヤーデータの読み込みがまだ終わっていない
+
+            document.getElementById("home-lv-num").innerText = "Lv." + p.level;
+            document.getElementById("xp-fill-home").style.width = (p.exp / p.goal * 100) + "%";
+            document.getElementById("home-xp-text").innerText = `${p.exp} / ${p.goal} XP`;
+            document.getElementById("home-coin-text").innerText = "🪙 " + p.coins; 
+            document.getElementById("egg-area").innerHTML = `<img id="monsterImage" src="${getMonsterImage(p)}" alt="monster">`;
+        }
+
+        function playFireworks(){ 
+            const layer = document.getElementById("firework-layer"); 
+            const colors = ["#ff5252", "#ffd700", "#00e5ff", "#e040fb", "#ffffff", "#ff9800"]; 
+            for(let w=0; w<3; w++){ 
+                setTimeout(() => { 
+                    const x = [50, 25, 75][w]; 
+                    const y = [40, 30, 35][w]; 
+                    for(let i=0; i<55; i++){ 
+                        const p = document.createElement("div"); 
+                        const size = Math.random()*6 + 4; 
+                        p.style.position = "absolute"; 
+                        p.style.width = size + "px"; 
+                        p.style.height = size + "px"; 
+                        p.style.borderRadius = "50%"; 
+                        p.style.left = x + "%"; 
+                        p.style.top = y + "%"; 
+                        p.style.background = colors[Math.floor(Math.random()*colors.length)]; 
+                        layer.appendChild(p); 
+                        
+                        const angle = Math.random() * Math.PI * 2; 
+                        const dist = Math.random()*500 + 120; 
+                        
+                        const anim = p.animate([ 
+                            { transform: "translate(0,0) scale(1.4)", opacity: 1 }, 
+                            { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(0)`, opacity: 0 } 
+                        ],{ 
+                            duration: 2400 + Math.random()*800, 
+                            easing: "cubic-bezier(0.1,0.5,0.3,1)",
+                            fill: "forwards"
+                        }); 
+
+                        anim.onfinish = () => { p.remove(); };
+                    } 
+                }, w*600); 
+            } 
+        }
+
+        // gacha.js など、他のモジュールから花火演出を呼べるように公開する
+        window.playFireworks = playFireworks;
+
+        // ゲーム画面(クイズ)のボタン・キー操作は game.js が管理する
+
+        // game.js がFirestoreからプレイヤーデータを読み込み終えたら
+        // ホーム画面の表示(レベル・XP・コイン)を更新し、
+        // ログインボーナスも確認する
+        window.addEventListener("hatchoria:playerReady", () => {
+            updateDisplay();
+            checkLoginBonus();
+        });
+
+        window.onload = () => { loadGameData(); updateDisplay(); };
+    </script>
+    <script type="module" src="screenNav.js?v=2"></script>
+    <script type="module" src="game.js?v=2"></script>
+    <script type="module" src="gacha.js?v=2"></script>
+    <script type="module" src="equipment.js?v=2"></script>
+    <script type="module" src="storage.js?v=2"></script>
+    <script type="module" src="profile.js?v=2"></script>
+    <script type="module" src="friends.js?v=2"></script>
+    <script type="module" src="match.js?v=2"></script>
+</body>
+</html>
